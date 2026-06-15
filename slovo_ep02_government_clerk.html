@@ -224,35 +224,30 @@
     init();draw();addEventListener('resize',init);
   }
 
-  /* ── 낭독 (브라우저 TTS) ── */
-  const btn=document.getElementById('narrate'),txt=btn.querySelector('.txt'),ico=btn.querySelector('.ico');
-  const script=[
-    "하급 관리 체르뱌코프는 어느 날 극장에서, 그만 재채기를 하고 맙니다.",
-    "하필 앞자리에 앉은 사람은, 그보다 한참 높은 고관이었습니다.",
-    "별일 아니었습니다. 장군은 머리를 닦고는 곧 잊었으니까요.",
-    "하지만 체르뱌코프는 잊지 못합니다. 그분이 화가 나신 게 분명해.",
-    "그는 사과하고, 또 사과하고, 다음 날 또 찾아가 사과합니다.",
-    "장군이 끝내 그만 좀 하게 라고 소리치자, 그는 집으로 돌아가 자리에 눕습니다.",
-    "그리고, 죽습니다.",
-    "그를 죽인 것은 재채기도, 장군도 아니었습니다.",
-    "권력 앞에서 한없이 작아지던, 그 자신의 두려움이었습니다.",
-    "우리도 때로, 아무도 신경 쓰지 않는 일을 혼자 곱씹다 무너집니다.",
-    "당신을 짓누르는 그 시선은, 정말 상대의 것인가요?",
-    "안톤 체호프, 관리의 죽음.",
-    "다음 한 줄에서, 또 만나요."
-  ].join("  ");
-  let playing=false;
-  function reset(){playing=false;txt.textContent='낭독 듣기';ico.textContent='♪';}
-  btn.addEventListener('click',()=>{
-    if(!('speechSynthesis' in window)){txt.textContent='지원 안 됨';return;}
-    if(playing){speechSynthesis.cancel();reset();return;}
-    speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(script);
-    u.lang='ko-KR';u.rate=0.92;u.pitch=1;u.onend=reset;u.onerror=reset;
-    speechSynthesis.speak(u);
-    playing=true;txt.textContent='멈추기';ico.textContent='❚❚';
-  });
-  window.addEventListener('beforeunload',()=>speechSynthesis.cancel());
+  /* ── 낭독 (mp3 오디오) ── */
+  const btn = document.getElementById('narrate');
+  const txt = btn.querySelector('.txt');
+  const ico = btn.querySelector('.ico');
+  const audio = new Audio('ep02.mp3'); audio.preload='auto';
+  function setUI(){ var p = !audio.paused && !audio.ended; txt.textContent = p?'멈추기':'낭독 듣기'; ico.textContent = p?'❚❚':'♪'; }
+  audio.addEventListener('play', setUI);
+  audio.addEventListener('pause', setUI);
+  audio.addEventListener('ended', setUI);
+  btn.addEventListener('click', function(e){ e.stopPropagation(); if(audio.paused){ audio.play().catch(function(){}); } else { audio.pause(); } });
+  var armed=false;
+  function arm(){
+    if(armed) return; armed=true;
+    audio.play().catch(function(){
+      // 자동재생 정책으로 차단되면, 첫 탭/클릭 때 재생
+      document.addEventListener('pointerdown', function once(ev){
+        if(ev.target.closest && ev.target.closest('#narrate')) return;
+        document.removeEventListener('pointerdown', once);
+        audio.play().catch(function(){});
+      });
+    });
+  }
+  window.addEventListener('scroll', arm, {passive:true, once:true});
+  window.addEventListener('beforeunload', function(){ audio.pause(); });
 })();
 </script>
 </body>
